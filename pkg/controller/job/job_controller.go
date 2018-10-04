@@ -23,7 +23,6 @@ import (
 
 	daemonsetv1beta1 "github.com/darkowlzz/daemonset-job/pkg/apis/daemonset/v1beta1"
 	appsv1 "k8s.io/api/apps/v1"
-	appsv1beta2 "k8s.io/api/apps/v1beta2"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -71,7 +70,7 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 
 	// TODO(user): Modify this to be the types you create
 	// Uncomment watch a Deployment created by Job - change this for objects you create
-	err = c.Watch(&source.Kind{Type: &appsv1.Deployment{}}, &handler.EnqueueRequestForOwner{
+	err = c.Watch(&source.Kind{Type: &appsv1.DaemonSet{}}, &handler.EnqueueRequestForOwner{
 		IsController: true,
 		OwnerType:    &daemonsetv1beta1.Job{},
 	})
@@ -111,18 +110,26 @@ func (r *ReconcileJob) Reconcile(request reconcile.Request) (reconcile.Result, e
 		return reconcile.Result{}, err
 	}
 
-	deploy := &appsv1beta2.DaemonSet{
+	deploy := &appsv1.DaemonSet{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      instance.Name + "-daemonset-job",
 			Namespace: instance.Namespace,
 		},
-		Spec: appsv1beta2.DaemonSetSpec{
+		Spec: appsv1.DaemonSetSpec{
 			Selector: &metav1.LabelSelector{
-				MatchLabels: map[string]string{"daemonset": instance.Name + "-daemonset-job"},
+				MatchLabels: map[string]string{
+					"daemonset":     instance.Name + "-daemonset-job",
+					"job":           instance.Name,
+					"daemonset-job": "true",
+				},
 			},
 			Template: corev1.PodTemplateSpec{
 				ObjectMeta: metav1.ObjectMeta{
-					Labels: map[string]string{"daemonset": instance.Name + "-daemonset-job"},
+					Labels: map[string]string{
+						"daemonset":     instance.Name + "-daemonset-job",
+						"job":           instance.Name,
+						"daemonset-job": "true",
+					},
 				},
 				Spec: corev1.PodSpec{
 					Containers: []corev1.Container{
@@ -158,10 +165,10 @@ func (r *ReconcileJob) Reconcile(request reconcile.Request) (reconcile.Result, e
 
 	// TODO(user): Change this for the object type created by your controller
 	// Check if the Daemonset already exists
-	found := &appsv1beta2.DaemonSet{}
+	found := &appsv1.DaemonSet{}
 	err = r.Get(context.TODO(), types.NamespacedName{Name: deploy.Name, Namespace: deploy.Namespace}, found)
 	if err != nil && errors.IsNotFound(err) {
-		log.Printf("Creating Deployment %s/%s\n", deploy.Namespace, deploy.Name)
+		log.Printf("Creating Daemonset %s/%s\n", deploy.Namespace, deploy.Name)
 		err = r.Create(context.TODO(), deploy)
 		if err != nil {
 			return reconcile.Result{}, err
@@ -174,7 +181,7 @@ func (r *ReconcileJob) Reconcile(request reconcile.Request) (reconcile.Result, e
 	// Update the found object and write the result back if there are any changes
 	if !reflect.DeepEqual(deploy.Spec, found.Spec) {
 		found.Spec = deploy.Spec
-		log.Printf("Updating Deployment %s/%s\n", deploy.Namespace, deploy.Name)
+		log.Printf("Updating Daemonset %s/%s\n", deploy.Namespace, deploy.Name)
 		err = r.Update(context.TODO(), found)
 		if err != nil {
 			return reconcile.Result{}, err
