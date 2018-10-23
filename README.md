@@ -110,3 +110,9 @@ In a k8s cluster, after deploying the controller, create `/tmp/foo` file on all
 the nodes.
 Applying the Job manifest would delete the file and cleanup all the created
 resources.
+
+## Development
+
+Run all the code checks and tests with `make all`.
+
+Build a container image with `IMG=<imagename> make docker-build`.
