@@ -16,7 +16,7 @@ jobs:
       - checkout
 
       # specify any bash command here prefixed with `run: `
-      - run: go get github.com/golang/lint/golint
+      - run: go get golang.org/x/lint/golint
       - run: curl -L -O https://github.com/kubernetes-sigs/kubebuilder/releases/download/v${version}/kubebuilder_${version}_linux_${arch}.tar.gz
       - run: tar -zxvf kubebuilder_${version}_linux_${arch}.tar.gz
       - run: sudo mv kubebuilder_${version}_linux_${arch} /usr/local/kubebuilder
